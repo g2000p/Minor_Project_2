@@ -84,3 +84,108 @@ public:
 	}
 
 };
+
+//connection
+struct Connection {
+	double weight;
+	double dweight;
+};
+
+
+
+class Neuron {
+
+public:
+	static double learningrate;
+	static double alpha;
+	
+	static double activate(double value)
+	{
+		return 1 / (1 + exp(-value));
+	}
+	
+	static double activateD(double value)
+	{
+		return activate(value) * (1 - activate(value));
+	}
+	static double random(void) {
+		return rand() / double(RAND_MAX);
+	}
+	double sumDOW(const Layer& nextlayer)
+	{
+		double sum = 0.0;
+
+		for (unsigned n = 0; n < nextlayer.size() - 1; n++)
+			sum += outweight[n].weight * nextlayer[n].gradient;
+
+		return sum;
+	}
+
+	double output;
+	vector<Connection> outweight;
+	unsigned index;
+	double gradient;
+
+	Neuron(unsigned outamt, unsigned index)
+	{
+		this->index = index;
+		outweight.reserve(outamt);
+
+		for (unsigned i = 0; i < outamt; i++) {
+			outweight.push_back(Connection());
+			outweight.back().weight = random();
+		}
+	}
+
+	void setoutput(double value)
+	{
+		output = value;
+	}
+
+	double getout(void) const
+	{
+		return output;
+	}
+
+	vector<Connection> getoutweight() const
+	{
+		return outweight;
+	}
+
+	void feedforward(const Layer& prevlayer)
+	{
+		double sum = 0.0;
+
+		for (unsigned n = 0; n < prevlayer.size(); n++)
+			sum += prevlayer[n].getout() * prevlayer[n].outweight[index].weight;
+
+		output = Neuron::activate(sum);
+	}
+
+	void outgradient(double target)
+	{
+		double delta = target - output;
+		gradient = delta * Neuron::activateD(output);
+	}
+
+	void hidgradient(const Layer& nextlayer)
+	{
+		double dow = sumDOW(nextlayer);
+		gradient = dow * Neuron::activateD(output);
+	}
+
+	void updateweight(Layer& prevlayer)
+	{
+
+		for (unsigned n = 0; n < prevlayer.size(); n++)
+		{
+			double olddweight = prevlayer[n].outweight[index].dweight;
+
+			double newdweight = learningrate * prevlayer[n].getout() * gradient + alpha * olddweight;
+
+			prevlayer[n].outweight[index].dweight = newdweight;
+			prevlayer[n].outweight[index].weight += newdweight;
+		}
+	}
+
+};

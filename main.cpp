@@ -274,3 +274,77 @@ public:
 
 };
 
+double Network::smoothfact = 100;
+
+
+
+
+class Graphics : public olcConsoleGameEngine {
+
+private:
+	Network& net;
+	const int gridsize = 32;
+	int guess = 0;
+	bool pixelstate[32 * 32];
+
+	void drawgrid() {
+		for (int i = 0; i < gridsize; i++) {
+			for (int j = 0; j < gridsize; j++) {
+				if (pixelstate[j * gridsize + i])
+					Draw(ScreenWidth() / 2 - gridsize / 2 + i, ScreenHeight() / 2 - gridsize / 2 + j, PIXEL_SOLID, FG_WHITE);
+				else
+					Draw(ScreenWidth() / 2 - gridsize / 2 + i, ScreenHeight() / 2 - gridsize / 2 + j, PIXEL_SOLID, FG_DARK_GREY);
+			}
+		}
+	}
+
+public:
+	Graphics(Network& n) :net(n) {
+	}
+
+	virtual bool OnUserCreate() {
+		for (int i = 0; i < gridsize * gridsize; i++)
+			pixelstate[i] = 0;
+
+		return true;
+	}
+
+	virtual bool OnUserUpdate(float eTime) {
+		int location = (m_mousePosY - (ScreenHeight() / 2 - gridsize / 2)) * gridsize + (m_mousePosX - (ScreenWidth() / 2 - gridsize / 2));
+		if (m_mouse[0].bHeld && location > 0 && location < 32 * 32)
+			pixelstate[location] = 1;
+
+		DrawString(ScreenWidth() / 2 - 6, 1, L"CLEAR");
+		DrawString(ScreenWidth() / 2 + 1, 1, L"SUBMIT");
+
+		if (m_mouse[0].bReleased) {
+			if (m_mousePosX >= ScreenWidth() / 2 - 6 && m_mousePosX < ScreenWidth() / 2 - 1 && m_mousePosY == 1) {
+				for (int i = 0; i < gridsize * gridsize; i++)
+					pixelstate[i] = 0;
+			}
+			else if (m_mousePosX >= ScreenWidth() / 2 + 1 && m_mousePosX < ScreenWidth() / 2 + 7 && m_mousePosY == 1) {
+				vector<double> inputs;
+				for (int i = 0; i < gridsize * gridsize; i++)
+					inputs.push_back(pixelstate[i]);
+
+				net.feedforward(inputs);
+
+				vector<double> results;
+				net.getres(results);
+
+				guess = 0;
+				for (unsigned i = 1; i < results.size(); i++) {
+					if (results[i] > results[guess])
+						guess = i;
+				}
+			}
+		}
+
+		drawgrid();
+
+		DrawString(ScreenWidth() / 2 + gridsize / 2 + (ScreenWidth() / 2 - gridsize / 2) / 2 - 3, ScreenHeight() / 2, L"GUESS: " + std::to_wstring(guess));
+
+		return true;
+	}
+
+};

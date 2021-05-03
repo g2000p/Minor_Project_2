@@ -189,3 +189,88 @@ public:
 	}
 
 };
+
+double Neuron::learningrate = 0.2;
+double Neuron::alpha = 0.5;
+
+class Network {
+
+private:
+	vector<Layer> layers;
+	double error;
+	double avgerror;
+	static double smoothfact;
+
+public:
+	Network(const vector<unsigned>& layout)
+	{
+		layers.reserve(layout.size());
+		error = 0;
+		avgerror = 0;
+		for (unsigned l = 0; l < layout.size(); l++) {
+			layers.push_back(Layer());
+			unsigned outamt = l == layout.size() - 1 ? 0 : layout[l + 1];
+
+			layers.back().reserve(layout[l]);
+			for (unsigned n = 0; n <= layout[l]; n++)
+				layers.back().push_back(Neuron(outamt, n));
+
+			layers.back().back().setoutput(1);
+		}
+	}
+	void feedforward(const vector<double>& inpvals)
+	{
+		for (unsigned i = 0; i < inpvals.size(); i++) {
+			layers[0][i].setoutput(inpvals[i]);
+		}
+
+		for (unsigned lnum = 1; lnum < layers.size(); lnum++) {
+			for (unsigned n = 0; n < layers[lnum].size() - 1; n++)
+				layers[lnum][n].feedforward(layers[lnum - 1]);
+		}
+	}
+	void backprop(const vector<double>& targets)
+	{
+		Layer& outlayer = layers.back();
+		error = 0.0;
+
+		for (unsigned n = 0; n < outlayer.size() - 1; n++) {
+			double delta = targets[n] - outlayer[n].getout();
+			error += delta * delta;
+		}
+		error /= outlayer.size() - 1;
+		error = sqrt(error);
+
+		avgerror = (avgerror * smoothfact + error) / (smoothfact + 1.0);
+
+		for (unsigned n = 0; n < outlayer.size() - 1; n++) {
+			outlayer[n].outgradient(targets[n]);
+		}
+
+		for (unsigned lnum = layers.size() - 2; lnum > 0; --lnum) {
+			for (unsigned n = 0; n < layers[lnum].size(); n++) {
+				layers[lnum][n].hidgradient(layers[lnum + 1]);
+			}
+		}
+
+		for (unsigned lnum = layers.size() - 1; lnum > 0; lnum--) {
+			for (unsigned n = 0; n < layers[lnum].size() - 1; n++) {
+				layers[lnum][n].updateweight(layers[lnum - 1]);
+			}
+		}
+	}
+	void getres(vector<double>& results)
+	{
+		results.clear();
+		results.reserve(layers.back().size());
+
+		for (unsigned n = 0; n < layers.back().size() - 1; n++)
+		{
+			results.push_back(layers.back()[n].getout());
+		}
+	}
+	double recentavgerror(void) const { return avgerror; }
+	vector<Layer> getLayers() const { return layers; }
+
+};
+

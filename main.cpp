@@ -348,3 +348,58 @@ public:
 	}
 
 };
+//main
+int main() {
+	File file("data.txt");
+	srand(time(NULL));
+
+	Network net(file.getlayout());
+
+	Graphics graphics(net);
+
+	int iteration = 0;
+
+	while (iteration < file.getmaxiterations()) {
+		cout << "Iteration: " << iteration << endl;
+
+		vector<double> inputs = file.getinputs(iteration % file.getdatasize());
+		net.feedforward(inputs);
+
+		cout << "Inputs: " << flush;
+
+		for (unsigned i = 0; i < inputs.size(); i++)
+			cout << inputs[i] << " " << flush;
+
+		vector<double> targets = file.gettargets(iteration % file.getdatasize());
+		net.backprop(targets);
+
+		cout << endl << "Targets: " << flush;
+
+		for (unsigned i = 0; i < targets.size(); i++)
+			cout << targets[i] << " " << flush;
+
+		cout << endl << "Results: " << flush;
+
+		vector<double> results;
+		net.getres(results);
+
+		for (unsigned i = 0; i < results.size(); i++)
+			cout << results[i] << " " << flush;
+
+		cout << endl << "Average recent error: " << net.recentavgerror() << endl << endl;
+		iteration++;
+
+		if (iteration == file.getmaxiterations()) {
+			string choice;
+			cout << "Neural network has reached expected amount of iterations." << endl;
+			cout << "Enter Y to test the neural network, enter N to keep training it" << endl;
+			cin >> choice;
+			cin.ignore(256, '\n');
+			if (choice == "Y" || choice == "y") {
+				graphics.ConstructConsole(68, 40, 16, 16);
+				graphics.Start();
+			}
+			iteration = 0;
+		}
+	}
+}

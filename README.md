@@ -1,9 +1,9 @@
 # Minor_Project_2
 ## Hand written digit recognition using ANN
 
-Project Mentor- Dr Hitesh Kumar Sharma
+<b>Project Mentor-</b> Dr Hitesh Kumar Sharma
 
-Group members:
+<b>Group members:</b>
 
 1. Adarsh Kandwal
 2. Divya Bansal
